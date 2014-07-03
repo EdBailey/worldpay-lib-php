@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Refund PHP Library Example</title>
+    <style>
+        body {
+            background:#efefef;
+            font-family:Verdana;
+        }
+        .container {
+            width:800px;
+            margin:auto;
+            background:#fff;
+            padding:20px;
+        }
+        .container h1 {
+            text-align:center;
+        }
+        .form-row {
+            height:50px;
+        }
+        .form-row input {
+            height:20px;
+            padding:2px;
+            padding-left:10px;
+        }
+
+        .form-row label {
+            width:200px;
+            text-align:right;
+            padding-right:10px;
+            display:inline-block;
+        }
+        .form-row select {
+            padding: 2px;
+            padding-left: 10px;
+            height:25px;
+        }
+		.payment-errors {
+			font-size: 20px;
+			font-weight: bold;
+			text-align: center;
+			color: red;
+			padding: 20px;
+			margin-bottom: 20px;
+		}
+		.token {
+			padding-top:20px;
+		}
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>PHP Library Refund Example</h1>
+        <form method="post" action="refund_order.php" id="my-payment-form">
+            <div class="payment-errors"></div>
+            <div class="form-row">
+                <label>
+                    Worldpay Order Code
+                </label>
+                <input type="text" id="orderCode" name="orderCode" value="" />
+            </div>
+            <input type="submit" value="Refund Order" />
+        </form>
+
+    </div>
+
+</body>
+</html>
