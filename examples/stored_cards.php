@@ -1,4 +1,7 @@
 <?php
+/**
+ * PHP library version: 1.1
+ */
 require_once('../lib/worldpay.php');
 
 // Initialise Worldpay class with your SERVICE KEY

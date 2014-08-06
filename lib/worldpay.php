@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * PHP library version: 1.1
+ */
+
 final class Worldpay
 {
 
@@ -8,7 +12,7 @@ final class Worldpay
      * */
 
     private $service_key = "";
-    private $timeout = 3;
+    private $timeout = 10;
     private $disable_ssl = false;
     private static $endpoint = 'https://api.worldpay.com/v1/';
 
@@ -220,7 +224,6 @@ final class Worldpay
         $order = array_merge($defaults, $order);
 
         $json = json_encode(array(
-            "type" => "OrderRequest",
             "token" => $order['token'],
             "orderDescription" => $order['orderDescription'],
             "amount" => $order['amount'],
@@ -234,7 +237,7 @@ final class Worldpay
 
         $response = $this->sendRequest('orders', $json, true);
 
-        if (isset($response["id"])) {
+        if (isset($response["orderCode"])) {
             //success
             return $response;
         } else {

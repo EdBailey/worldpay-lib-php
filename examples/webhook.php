@@ -1,4 +1,7 @@
 <?php
+/**
+ * PHP library version: 1.1
+ */
 require_once('../lib/worldpay.php');
 
 // This PHP file should be set as a webhook in the Worldpay settings page. It needs to be publicaly accessible

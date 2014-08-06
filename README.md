@@ -1,4 +1,4 @@
-# Worldpay PHP Library
+# Worldpay PHP Library 1.1
 
 #### Documentation
 https://developer.worldpay.com/docs

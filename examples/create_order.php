@@ -1,4 +1,7 @@
 <?php
+/**
+ * PHP library version: 1.1
+ */
 require_once('../lib/worldpay.php');
 
 // Initialise Worldpay class with your SERVICE KEY
@@ -15,7 +18,6 @@ $amount = $_POST['amount'];
 try {
     // Customers billing address
     $billing_address = array(
-        "type"=>"Address",
         "address1"=>'123 House Road',
         "address2"=> 'A village',
         "address3"=> '',
@@ -36,10 +38,10 @@ try {
         ),
         'customerOrderCode' => 'A123' // Order code of your choice
     ));
-    ;
+    
     if ($response['paymentStatus'] === 'SUCCESS') {
         // Create order was successful!
-        $worldpayOrderCode = $response['id'];
+        $worldpayOrderCode = $response['orderCode'];
         echo '<pre>' . print_r($response, true). '</pre>';
         // TODO: Store the order code somewhere..
     } else {
