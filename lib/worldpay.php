@@ -12,9 +12,11 @@ final class Worldpay
      * */
 
     private $service_key = "";
+    private $merchantID = '';
     private $timeout = 10;
     private $disable_ssl = false;
     private static $endpoint = 'https://api.worldpay.com/v1/';
+    const aggregateMerchantID = '';
 
     private static $errors = array(
         "ip"        => "Invalid parameters",
@@ -41,6 +43,7 @@ final class Worldpay
         ),
         'json'      => 'JSON could not be decoded',
         'key'       => 'Please enter your service key',
+        'merchantID'       => 'Please enter your merchant ID',
         'sslerror'  => 'Worldpay SSL certificate could not be validated'
     );
 
@@ -53,9 +56,9 @@ final class Worldpay
      * */
     public function __construct($service_key = false, $timeout = false)
     {
-        if ($service_key == false) {
+        /*if ($service_key == false) {
             self::onError("key");
-        }
+        }*/
         $this->service_key = $service_key;
 
         if ($timeout !== false) {
@@ -67,6 +70,19 @@ final class Worldpay
         }
     }
 
+    /**
+     * Set the merchant ID to use for requests
+     * @param string $merchantID The merchant ID to use
+     */
+    public function setMerchantID($merchantID) {
+        $this->merchantID = $merchantID;
+    }
+
+    private function requireMerchantID() {
+        if (empty($this->merchantID) || !is_string($this->merchantID)) {
+            self::onError('ip', self::$errors['merchantID']);
+        }
+    }
     /**
      * Checks if variable is a float
      * @param float $number
@@ -121,6 +137,15 @@ final class Worldpay
      * */
     private function sendRequest($action, $json = false, $expectResponse = false, $method = 'POST')
     {
+        $header_array = array(
+                "Content-Type: application/json",
+                "Content-Length: " . strlen($json)
+            );
+
+        if ($this->service_key) {
+            $header_array[] = "Authorization: $this->service_key";
+        }
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, self::$endpoint.$action);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
@@ -132,11 +157,7 @@ final class Worldpay
         curl_setopt(
             $ch,
             CURLOPT_HTTPHEADER,
-            array(
-                "Authorization: $this->service_key",
-                "Content-Type: application/json",
-                "Content-Length: " . strlen($json)
-            )
+            $header_array
         );
         // Disabling SSL used for localhost testing
         if ($this->disable_ssl === true) {
@@ -258,6 +279,26 @@ final class Worldpay
     }
 
     /**
+     * Retrieve Worldpay order
+     * @param string $orderCode
+     * */
+    public function getOrder($orderCode = false)
+    {
+        if (empty($orderCode) || !is_string($orderCode)) {
+            self::onError('ip', self::$errors['order']['ordercode']);
+        }
+        return $this->sendRequest('orders/' . $orderCode, false, true, 'GET' );
+    }
+
+    /**
+     * Retrieve a list of Worldpay orders
+     * @param string $orderCode
+     * */
+    public function listOrders($fromDate, $toDate, $environment, $paymentStatus = false, $pageNumber = 0, $sortDirection = 'DESC', $sortProperty = 'CREATE_DATE', $csv = false) {
+        //TODO
+    }
+
+    /**
      * Get card details from Worldpay token 
      * @param string $token
      * @return array card details
@@ -366,6 +407,133 @@ final class Worldpay
             require_once('JSON.php');
         }
         return json_decode($response, true);
+    }
+
+    /***********************************************************************************/
+    /*                                  SETTINGS                                       */
+    /***********************************************************************************/
+    public function getSettings() {
+        $this->requireMerchantID();
+        return $this->sendRequest('merchants/' . $this->merchantID . '/settings', false, true, 'GET' );
+    }
+
+    public function updateRiskSettings($cvc, $avs) {
+        $this->requireMerchantID();
+
+        $json = array('cvcEnabled' => $cvc, 'avsEnabled' => $avs);
+        $json = json_encode($json);
+
+        return $this->sendRequest('merchants/' . $this->merchantID . '/settings/riskSettings', $json, false, 'PUT' );
+    }
+
+    public function recurringBilling($enable) {
+        $this->requireMerchantID();
+
+        //Convert boolean to string...
+        $enable = ($enable?'true':'false');
+
+        return $this->sendRequest('merchants/' . $this->merchantID . '/settings/orderSettings/recurringBilling/' . $enable, false, false, 'PUT' );
+    }
+
+    /***********************************************************************************/
+    /*                                  MERCHANTS                                      */
+    /***********************************************************************************/
+    public function createMerchant($setMerchantID = true) {
+        $json = array();
+        $json['aggregateMerchantId'] = self::aggregateMerchantID;
+
+        $json = json_encode($json);
+
+        $response =  $this->sendRequest('merchants', $json, true, 'POST' );
+        if (!isset($response['merchantId'])) {
+            self::onError("apierror");
+        }
+
+        //If we haven't been told not to, set the merchantID for further processing.
+        if ($setMerchantID) {
+            $this->setMerchantID($response['merchantId']);
+        }
+        return $response['merchantId'];
+    }
+
+    public function activateMerchant($data) {
+        $this->requireMerchantID();
+
+        if (is_array($data)) {
+            json_encode($data);
+        }
+
+        return $this->sendRequest('merchants/' . $this->merchantID, $data, false, 'POST' );
+    }
+
+    public function getMerchant() {
+        $this->requireMerchantID();
+
+        return $this->sendRequest('merchants/' . $this->merchantID, false, true, 'GET' );
+    }
+
+    public function updateMerchant($data) {
+        $this->requireMerchantID();
+
+        if (is_array($data)) {
+            json_encode($data);
+        }
+
+        return $this->sendRequest('merchants/' . $this->merchantID, $data, false, 'PUT' );
+    }
+
+    /***********************************************************************************/
+    /*                                  TRANSFERS                                      */
+    /***********************************************************************************/
+    public function listTransfers($pageNumber = 0) {
+        $this->requireMerchantID();
+
+        return $this->sendRequest('transfers?merchantId=' . $this->merchantID . '&pageNumber=' . $pageNumber, false, true, 'GET' );
+    }
+
+    public function getTransfer($transferID) {
+        return $this->sendRequest('transfers/' . $transferID, false, true, 'GET' );
+    }
+
+    /***********************************************************************************/
+    /*                                  WEBHOOKS                                       */
+    /***********************************************************************************/
+    public function createWebhook($url, $events) {
+        $this->requireMerchantID();
+
+        $json = array('webHookUrl' => $url, 'events' => $events);
+        $json = json_encode($json);
+
+        return $this->sendRequest('merchants/' . $this->merchantID . '/settings/webhooks', $json, false, 'POST' );
+    }
+
+    public function listWebhooks() {
+        $this->requireMerchantID();
+
+        return $this->sendRequest('merchants/' . $this->merchantID . '/settings/webhooks', false, true, 'GET' );
+    }
+
+    public function updateWebhook($webhookID, $url, $events) {
+        $this->requireMerchantID();
+
+        $json = array('webHookUrl' => $url, 'events' => $events);
+        $json = json_encode($json);
+
+        return $this->sendRequest('merchants/' . $this->merchantID . '/settings/webhooks/' . $webhookID, $json, false, 'PUT' );
+    }
+
+    public function deleteWebhook($webhookID) {
+        $this->requireMerchantID();
+
+        return $this->sendRequest('merchants/' . $this->merchantID . '/settings/webhooks/' . $webhookID, false, false, 'DELETE' );
+    }
+
+    public function testWebhook($webhookID, $event) {
+        $this->requireMerchantID();
+
+        $json = json_encode( array('event'=>$event) );
+
+        return $this->sendRequest('merchants/' . $this->merchantID . '/settings/webhooks/' . $webhookID . '/notifications', $json, true, 'POST' );
     }
 }
 
